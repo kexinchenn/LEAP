@@ -479,6 +479,38 @@ class CooperativeProblem(Problem):
             fitnesses.append(fitness)
 
         return np.mean(fitnesses)
+    
+    def evaluate_multiple(self, individuals):
+
+        # Pull references to all subpopulations from the context object
+        subpopulations = self.context['leap']['subpopulations']
+        current_subpop_index = self.context['leap']['current_subpopulation']
+
+        fitnesses_all = []
+        combined_ind_all = []
+        for individual in individuals:
+            current_genome = individual.genome
+
+            # Choose collaborators and evaulate
+            for i in range(self.num_trials):
+                all_collaborators = self._choose_collaborators(current_genome, current_subpop_index, subpopulations)
+                combined_genome = self.combine_genomes(all_collaborators)
+                combined_ind = Individual(combined_genome, decoder=self.combined_decoder, problem=self.wrapped_problem)
+                combined_ind_all.append(combined_ind)
+
+                # Optionally write out data about the collaborations
+                if self.log_writer is not None:
+                    self._log_trial(
+                        self.log_writer,
+                        all_collaborators,
+                        combined_ind,
+                        i,
+                        context=self.context)
+
+        fitnesses_all = np.array(self.wrapped_problem.evaluate_multiple(combined_ind_all))
+        fitnesses_all = fitnesses_all.reshape((len(individuals),self.num_trials))
+
+        return [np.mean(fitnesses) for fitnesses in fitnesses_all]
 
     def _choose_collaborators(self, current_genome, current_subpop_index, subpopulations):
         """Choose collaborators from the subpopulations, returning a list that contains

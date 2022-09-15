@@ -474,10 +474,12 @@ class CooperativeProblem(Problem):
         # Choose collaborators and evaulate
         fitnesses = []
         for i in range(self.num_trials):
-            all_collaborators = self._choose_collaborators(current_genome, current_subpop_index, subpopulations)
-            combined_genome = self.combine_genomes(all_collaborators)
+            all_collaborators = self._choose_collaborators(individual, current_subpop_index, subpopulations)
+            # combined_genome = self.combine_genomes(all_collaborators)
+            combined_genome = concat_combine(all_collaborators)
             combined_ind = Individual(combined_genome, decoder=self.combined_decoder, problem=self.wrapped_problem)
-            fitness = combined_ind.evaluate()
+            # fitness = combined_ind.evaluate()
+            fitness = self.wrapped_problem.evaluate(combined_ind.genome)
 
             # Optionally write out data about the collaborations
             if self.log_file is not None:
@@ -526,7 +528,7 @@ class CooperativeProblem(Problem):
 
         return [np.mean(fitnesses) for fitnesses in fitnesses_all]
 
-    def _choose_collaborators(self, current_genome, current_subpop_index, subpopulations):
+    def _choose_collaborators(self, current_individual, current_subpop_index, subpopulations):
         """Choose collaborators from the subpopulations, returning a list that contains
         the genome for the current individual and all of the genomes for collaborators, 
         in the order that they will be combined."""
@@ -541,10 +543,10 @@ class CooperativeProblem(Problem):
                 ind = next(selection_iterators[i])
                 # Make sure we actually got something with a genome back
                 assert (hasattr(ind, 'genome'))
-                all_collaborators.append(ind.genome)
+                all_collaborators.append(ind)
             else:
                 # Stick this subpop's individual in as-is
-                all_collaborators.append(current_genome)
+                all_collaborators.append(current_individual)
 
         assert (len(all_collaborators) == len(subpopulations))
 

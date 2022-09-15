@@ -306,6 +306,8 @@ def multi_population_ea(max_generations, num_populations, pop_size, problem,
                 bsf[i] = max(offspring)
 
             pops[i] = offspring  # Replace parents with offspring
+            for d in range(len(offspring)):
+                context['leap']['subpopulations'][i][d].fitness = offspring[d].fitness
 
         generation_counter()  # Increment to the next generation
 

@@ -47,7 +47,9 @@ def evaluate(individual, context=context):
             f'Worker {worker.id} started evaluating {individual!s}')
 
     # Any thrown exceptions are now handled inside Individual.evaluate()
-    individual.evaluate()
+    # individual.evaluate()
+    individual.problem.context = context
+    individual.fitness = individual.problem.evaluate(individual)
 
     if hasattr(individual, 'is_viable') and not individual.is_viable:
         # is_viable will be False if an exception was thrown during evaluation.

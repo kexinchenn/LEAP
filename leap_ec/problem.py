@@ -434,22 +434,23 @@ class CooperativeProblem(Problem):
         self.collaborator_selector = collaborator_selector
         self.combined_decoder = combined_decoder
         self.combine_genomes = combine_genomes
+        self.log_file = log_stream
 
-        # Set up the CSV writier
-        if log_stream is not None:
-            self.log_writer = csv.DictWriter(
-                log_stream,
-                fieldnames=[
-                    'generation',
-                    'subpopulation',
-                    'individual_type',
-                    'collaborator_subpopulation',
-                    'genome',
-                    'fitness'])
-            # We print the header at construction time
-            self.log_writer.writeheader()
-        else:
-            self.log_writer = None
+        # # Set up the CSV writier
+        # if log_stream is not None:
+        #     self.log_writer = csv.DictWriter(
+        #         log_stream,
+        #         fieldnames=[
+        #             'generation',
+        #             'subpopulation',
+        #             'individual_type',
+        #             'collaborator_subpopulation',
+        #             'genome',
+        #             'fitness'])
+        #     # We print the header at construction time
+        #     self.log_writer.writeheader()
+        # else:
+        #     self.log_writer = None
 
     def evaluate(self, individual):
 
@@ -458,6 +459,17 @@ class CooperativeProblem(Problem):
         # Pull references to all subpopulations from the context object
         subpopulations = self.context['leap']['subpopulations']
         current_subpop_index = self.context['leap']['current_subpopulation']
+        if self.log_file is not None:
+            log_stream = open(self.log_file, 'a')
+            log_writer = csv.DictWriter(
+                        log_stream,
+                        fieldnames=[
+                            'generation',
+                            'subpopulation',
+                            'individual_type',
+                            'collaborator_subpopulation',
+                            'genome',
+                            'fitness'])
 
         # Choose collaborators and evaulate
         fitnesses = []
@@ -468,9 +480,9 @@ class CooperativeProblem(Problem):
             fitness = combined_ind.evaluate()
 
             # Optionally write out data about the collaborations
-            if self.log_writer is not None:
+            if self.log_file is not None:
                 self._log_trial(
-                    self.log_writer,
+                    log_writer,
                     all_collaborators,
                     combined_ind,
                     i,
@@ -478,6 +490,8 @@ class CooperativeProblem(Problem):
 
             fitnesses.append(fitness)
 
+        if self.log_file is not None:
+            log_stream.close()
         return np.mean(fitnesses)
     
     def evaluate_multiple(self, individuals):
@@ -545,14 +559,14 @@ class CooperativeProblem(Problem):
                              'subpopulation'             : context['leap']['current_subpopulation'],
                              'individual_type'           : 'Collaborator',
                              'collaborator_subpopulation': i,
-                             'genome'                    : collab.genome,
+                             'genome'                    : [round(g, 20) for g in collab.genome],
                              'fitness'                   : collab.fitness})
 
         writer.writerow({'generation'                : context['leap']['generation'],
                          'subpopulation'             : context['leap']['current_subpopulation'],
                          'individual_type'           : 'Combined Individual',
                          'collaborator_subpopulation': None,
-                         'genome'                    : combined_ind.genome,
+                         'genome'                    : [round(g, 20) for g in combined_ind.genome],
                          'fitness'                   : combined_ind.fitness})
 
     def worse_than(self, first_fitness, second_fitness):
